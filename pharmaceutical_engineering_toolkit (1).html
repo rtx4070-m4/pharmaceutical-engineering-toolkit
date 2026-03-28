@@ -1,0 +1,457 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pharmaceutical Engineering Toolkit</title>
+
+<style>
+body{
+font-family: Inter, Roboto, Arial, sans-serif;
+background:#f5f7fb;
+margin:0;
+padding:0;
+}
+
+.container{
+max-width:900px;
+margin:auto;
+padding:20px;
+}
+
+.card{
+background:white;
+padding:25px;
+border-radius:12px;
+box-shadow:0 4px 20px rgba(0,0,0,0.08);
+}
+
+h1{
+margin:0;
+font-size:28px;
+}
+
+.subtitle{
+color:#666;
+margin-bottom:20px;
+}
+
+select,input{
+width:100%;
+padding:10px;
+margin-top:6px;
+margin-bottom:15px;
+border-radius:6px;
+border:1px solid #ccc;
+font-size:15px;
+}
+
+button{
+background:#2563eb;
+color:white;
+border:none;
+padding:12px 18px;
+border-radius:8px;
+font-size:16px;
+cursor:pointer;
+}
+
+button:hover{
+background:#1e4fd6;
+}
+
+.result{
+margin-top:20px;
+padding:15px;
+background:#f0f4ff;
+border-radius:8px;
+font-size:16px;
+}
+
+label{
+font-weight:600;
+}
+
+@media (max-width:600px){
+h1{font-size:22px;}
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+
+<h1>Pharmaceutical Engineering Toolkit</h1>
+<div class="subtitle">Calculators for Unit Operations & Process Design</div>
+
+<label>Select Calculator</label>
+<select id="calculatorSelect">
+<option value="reynolds">Reynolds Number</option>
+<option value="pressure">Pressure Drop in Pipe</option>
+<option value="pump">Pump Hydraulic Power</option>
+<option value="lmtd">LMTD (Heat Exchanger)</option>
+<option value="bond">Size Reduction (Bond’s Law)</option>
+<option value="stokes">Sedimentation (Stokes’ Law)</option>
+<option value="mixing">Mixing Time</option>
+<option value="drying">Drying Rate</option>
+</select>
+
+<div id="inputs"></div>
+
+<button onclick="calculate()">Calculate</button>
+
+<div class="result" id="result">Results will appear here</div>
+
+</div>
+
+</div>
+
+<script>
+
+const g = 9.81;
+
+function renderInputs(){
+
+let type = document.getElementById("calculatorSelect").value;
+let html="";
+
+if(type==="reynolds"){
+
+html+=`
+<label>Fluid Density (kg/m³)</label>
+<input id="density">
+
+<label>Fluid Velocity (m/s)</label>
+<input id="velocity">
+
+<label>Pipe Diameter (m)</label>
+<input id="diameter">
+
+<label>Viscosity</label>
+<input id="viscosity">
+
+<label>Viscosity Unit</label>
+<select id="visUnit">
+<option value="pas">Pa·s</option>
+<option value="cp">cP</option>
+</select>
+`;
+
+}
+
+if(type==="pressure"){
+
+html+=`
+<label>Pipe Length (m)</label>
+<input id="length">
+
+<label>Pipe Diameter (m)</label>
+<input id="diameter">
+
+<label>Fluid Density (kg/m³)</label>
+<input id="density">
+
+<label>Fluid Velocity (m/s)</label>
+<input id="velocity">
+
+<label>Friction Factor</label>
+<input id="f">
+`;
+
+}
+
+if(type==="pump"){
+
+html+=`
+<label>Flow Rate Q (m³/s)</label>
+<input id="Q">
+
+<label>Fluid Density (kg/m³)</label>
+<input id="density">
+
+<label>Total Head (m)</label>
+<input id="H">
+
+<label>Pump Efficiency (%)</label>
+<input id="eff" value="70">
+`;
+
+}
+
+if(type==="lmtd"){
+
+html+=`
+<label>Hot Inlet Temp (°C)</label>
+<input id="Th_in">
+
+<label>Hot Outlet Temp (°C)</label>
+<input id="Th_out">
+
+<label>Cold Inlet Temp (°C)</label>
+<input id="Tc_in">
+
+<label>Cold Outlet Temp (°C)</label>
+<input id="Tc_out">
+`;
+
+}
+
+if(type==="bond"){
+
+html+=`
+<label>Feed Size D80 (µm)</label>
+<input id="D80">
+
+<label>Product Size d80 (µm)</label>
+<input id="d80">
+
+<label>Work Index (kWh/ton)</label>
+<input id="Wi">
+
+<label>Mass (tons)</label>
+<input id="mass">
+
+<label>Optional Time (hours)</label>
+<input id="time">
+`;
+
+}
+
+if(type==="stokes"){
+
+html+=`
+<label>Particle Diameter (m)</label>
+<input id="d">
+
+<label>Particle Density (kg/m³)</label>
+<input id="rho_p">
+
+<label>Fluid Density (kg/m³)</label>
+<input id="rho_f">
+
+<label>Viscosity (Pa·s)</label>
+<input id="mu">
+`;
+
+}
+
+if(type==="mixing"){
+
+html+=`
+<label>Vessel Diameter (m)</label>
+<input id="Dv">
+
+<label>Impeller Diameter (m)</label>
+<input id="Di">
+
+<label>Impeller Speed (rpm)</label>
+<input id="rpm">
+
+<label>Liquid Height (m)</label>
+<input id="H">
+
+<label>Kinematic Viscosity (m²/s)</label>
+<input id="nu">
+`;
+
+}
+
+if(type==="drying"){
+
+html+=`
+<label>Initial Moisture X_initial</label>
+<input id="Xi">
+
+<label>Critical Moisture X_critical</label>
+<input id="Xc">
+
+<label>Dry Solid Mass (kg)</label>
+<input id="mass">
+
+<label>Drying Surface Area (m²)</label>
+<input id="A">
+
+<label>Drying Rate (kg/m²·h)</label>
+<input id="rate">
+`;
+
+}
+
+document.getElementById("inputs").innerHTML = html;
+
+}
+
+renderInputs();
+
+document.getElementById("calculatorSelect").addEventListener("change",renderInputs);
+
+function val(id){
+return parseFloat(document.getElementById(id).value);
+}
+
+function calculate(){
+
+let type = document.getElementById("calculatorSelect").value;
+let out="";
+
+try{
+
+if(type==="reynolds"){
+
+let rho=val("density");
+let v=val("velocity");
+let D=val("diameter");
+let mu=val("viscosity");
+
+if(document.getElementById("visUnit").value==="cp"){
+mu = mu/1000;
+}
+
+let Re=(rho*v*D)/mu;
+
+let regime="";
+
+if(Re<2000) regime="Laminar";
+else if(Re<4000) regime="Transitional";
+else regime="Turbulent";
+
+out=`Reynolds Number = ${Re.toFixed(2)} <br> Flow Regime: ${regime}`;
+
+}
+
+if(type==="pressure"){
+
+let L=val("length");
+let D=val("diameter");
+let rho=val("density");
+let v=val("velocity");
+let f=val("f");
+
+let dP = f*(L/D)*(rho*v*v/2);
+
+out=`Pressure Drop = ${dP.toFixed(2)} Pa <br> ${(dP/100000).toFixed(4)} bar`;
+
+}
+
+if(type==="pump"){
+
+let Q=val("Q");
+let rho=val("density");
+let H=val("H");
+let eff=val("eff")/100;
+
+let hydraulic=rho*g*Q*H;
+
+let shaft=hydraulic/eff;
+
+out=`Hydraulic Power = ${(hydraulic/1000).toFixed(2)} kW <br>
+Shaft Power = ${(shaft/1000).toFixed(2)} kW`;
+
+}
+
+if(type==="lmtd"){
+
+let Th_in=val("Th_in");
+let Th_out=val("Th_out");
+let Tc_in=val("Tc_in");
+let Tc_out=val("Tc_out");
+
+let dT1=Th_in-Tc_out;
+let dT2=Th_out-Tc_in;
+
+let lmtd;
+
+if(dT1===dT2){
+lmtd=dT1;
+}else{
+lmtd=(dT1-dT2)/Math.log(dT1/dT2);
+}
+
+out=`LMTD = ${lmtd.toFixed(2)} °C`;
+
+}
+
+if(type==="bond"){
+
+let D80=val("D80");
+let d80=val("d80");
+let Wi=val("Wi");
+let mass=val("mass");
+let time=val("time");
+
+let energy=Wi*(10/Math.sqrt(d80)-10/Math.sqrt(D80))*mass;
+
+out=`Energy Required = ${energy.toFixed(2)} kWh`;
+
+if(time){
+let power=energy/time;
+out+=`<br>Required Power = ${power.toFixed(2)} kW`;
+}
+
+}
+
+if(type==="stokes"){
+
+let d=val("d");
+let rho_p=val("rho_p");
+let rho_f=val("rho_f");
+let mu=val("mu");
+
+let vt=(d*d*(rho_p-rho_f)*g)/(18*mu);
+
+let Re=(rho_f*vt*d)/mu;
+
+out=`Terminal Velocity = ${vt.toExponential(3)} m/s <br>
+Reynolds Number = ${Re.toFixed(5)} <br>
+Applicable if Re < 0.1`;
+
+}
+
+if(type==="mixing"){
+
+let Dv=val("Dv");
+let Di=val("Di");
+let rpm=val("rpm");
+let H=val("H");
+let nu=val("nu");
+
+let N=rpm/60;
+
+let tm = 5.2*Math.pow((Dv/Di),2)*(H/Dv)*Math.pow((N*Di*Di/nu),(-1/3));
+
+out=`Mixing Time = ${tm.toFixed(2)} seconds`;
+
+}
+
+if(type==="drying"){
+
+let Xi=val("Xi");
+let Xc=val("Xc");
+let mass=val("mass");
+let A=val("A");
+let rate=val("rate");
+
+let t=(mass*(Xi-Xc))/(A*rate);
+
+out=`Constant Rate Drying Time = ${t.toFixed(2)} hours`;
+
+}
+
+}catch{
+
+out="Invalid input. Please check values.";
+
+}
+
+document.getElementById("result").innerHTML=out;
+
+}
+
+</script>
+
+</body>
+</html>
